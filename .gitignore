@@ -1,0 +1,17 @@
+# Raw / large data — keep out of git (live in Databricks volumes or local data/)
+data/
+*.parquet
+*.tif
+*.tiff
+*.gpkg
+*.shp
+*.zip
+*.csv.gz
+
+# Notebook + tooling noise
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.databricks/
+.DS_Store
+*.log
