@@ -1,0 +1,100 @@
+# viticultura-eo — DO configuration
+#
+# This file is the extensibility seam (spec §11, requirement G6). Adding a second
+# denomination should be a new file here, not a code change.
+#
+# Values marked VERIFIED were checked against the real source files, not assumed.
+
+do_id: ribera_del_duero
+name: DO Ribera del Duero
+ccaa: castilla_y_leon
+
+# --- Legal boundary -------------------------------------------------------------
+# MAPA "Calidad Diferenciada — Vinos" layer. 96 appellations, one polygon each.
+# Download is manual: the published URL returns an HTML page, not the zip.
+boundary:
+  source_page: https://www.mapa.gob.es/es/cartografia-y-sig/ide/descargas/alimentacion/vinos
+  file: calidaddiferenciada_vinos.zip
+  layer: CalidadDiferenciada_Vinos
+  vintage: "2014-03"
+  key_column: ZON_CO_ID       # VERIFIED — the name column is ZON_DS_NOM; 'nombre' does not exist
+  key_value: 49               # VERIFIED — Ribera del Duero. Guadiana is 50, Júcar is 51.
+  crs: 4258                   # VERIFIED — geographic, degrees
+  measured_area_km2: 3243.0   # VERIFIED
+  measured_bbox: [-4.4262, 41.4129, -2.8942, 41.8771]   # VERIFIED
+  # STALE: yields 82 municipalities vs 102 published. Valladolid (19) and Segovia (4) match
+  # exactly; Burgos is short 7 and Soria short 13. Covers the DO as it stood in 2014.
+  # Neighbouring DOs in the same layer, for the multi-DO panel (spec §10):
+  # Rueda 53, Toro 61, Cigales 17, Arlanza 7, Arribes 8, Bierzo 9
+
+# --- Parcel geometry ------------------------------------------------------------
+# SIGPAC, published per municipality by ITACyL. Manual download; NB01 emits the URL list.
+sigpac:
+  source: itacyl
+  ftp_base: https://ftp.itacyl.es/cartografia/05_SIGPAC
+  path_template: "{year}_ETRS89/Parcelario_SIGPAC_CyL_Municipios/{province}/"
+  level: municipio            # ~1.75 MB per file vs 4.1 GB/year for whole provinces
+  shapefile: RECFE            # VERIFIED — recintos carry USO_SIGPAC. PARFE/POLFE are ignored.
+  crs: 4258                   # VERIFIED — degrees, despite the metadata prose saying UTM
+  recinto_id_column: C_REFREC # VERIFIED — 23-char stable key
+  # WARNING: chars 1-5 of C_REFREC are the CADASTRAL municipality code, NOT INE.
+  # 78 of 82 DO municipalities differ, and the codes collide across systems
+  # (cadastral 09155 = Gumiel de Mercado, INE 09155 = Haza).
+  # Match on normalised NAME; ref_municipio_crosswalk carries both codes.
+  match_strategy: name        # never code — it produces silent false positives
+  area_column: SUPERFICIE     # VERIFIED — genuine m². Shape_Area is square degrees, unusable.
+  years: [2022, 2023, 2024, 2025]
+  years_available: [2012, 2026]   # full range present on the FTP
+  # FTP quirks, all VERIFIED:
+  #  - folder naming differs by year: 2023-2025 'Burgos/', 2022 '09_Burgos/'
+  #  - 'n-tilde' is served as %c2%b1 (U+00B1) — 'Miño' appears as 'Mi±o'
+  #  - Valladolid 2024 is incomplete: 124 of 225 municipalities published (7 of ours missing)
+  # LICENCE: free use permitted, COMMERCIAL EXPLOITATION PROHIBITED.
+  # "Está permitido el uso gratuito de los datos, pero queda prohibida su explotación comercial."
+  # Stated by ITACyL for every year 2012-2024. Unresolved — see README.
+  licence: free-use-only-no-commercial
+
+# --- Land use codes -------------------------------------------------------------
+uso:
+  primary: VI                 # VIÑEDO
+  adjacent: [VF, VO, FV, CV]  # viñedo-frutal, viñedo-olivar, frutos secos-viñedo, cítricos-viñedo
+  # Spec §8 NB01.4 omits CV. Included for completeness; expected to be zero in Castilla y León.
+  # Decision rule: if adjacent codes are <1% of vineyard area, exclude and never revisit.
+
+# --- Municipality derivation ----------------------------------------------------
+municipios:
+  source_table: geospatial.spain_population_analysis.municipios_geo_raw   # from P-01
+  min_frac_inside: 0.01       # below this is digitisation noise between two datasets, not a real partial
+  partial_threshold: 0.99     # below this the pliego includes the municipality only by paraje
+  expected_count: 115         # spec §1
+
+# --- Mask (consumed by NB02, not NB01) ------------------------------------------
+mask:
+  buffer_m: -15
+  min_area_ha: 0.5
+  fixed_years: [2022, 2023, 2024, 2025]   # D4: recinto must be VI in every year
+  # WARNING: median VI recinto in Ribera is ~0.35 ha, BELOW this floor. A -15 m buffer on a
+  # ~60x60 m parcel leaves ~0.09 ha, which then also fails it. D5 as specified may remove most
+  # of the denomination. Set these from NB01's Q7 attrition ladder, not from the spec's assumption.
+
+# --- Imagery --------------------------------------------------------------------
+imagery:
+  stac_api: https://earth-search.aws.element84.com/v1
+  collection: sentinel-2-l2a  # NOT c1-l2a — Collection 1 has zero 2022 coverage over Ribera
+  search_buffer_m: 2000
+  max_cloud_cover: 80         # D7: loose only; the real filter is per-pixel SCL in NB04
+  bands: [red, nir, rededge1, nir08, swir16, scl]
+  # bbox is DERIVED from the boundary into ref_search_envelope — never hardcode it.
+  # The old literal [-4.5, 41.4, -3.2, 41.9] missed tiles 30TWL/30TWM, ~20% of the DO.
+
+season:
+  start_doy: 91               # 1 Apr
+  end_doy: 304                # 31 Oct — together these are the Winkler index window
+h3_resolution: 12
+
+# --- Reference values -----------------------------------------------------------
+reference:
+  inscribed_ha: 27468.59      # Consejo Regulador, 2025
+  yield_caps_kg_ha:
+    2025: 7000
+    2026: 6300                # cut 10% at the 25 Jun 2026 plenary
