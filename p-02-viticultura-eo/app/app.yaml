@@ -1,0 +1,7 @@
+command: ["python", "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# resources (sql-warehouse binding) are declared in ../resources/app.yml, not here —
+# keeps the warehouse id out of source and lets the bundle own it declaratively.
+env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse

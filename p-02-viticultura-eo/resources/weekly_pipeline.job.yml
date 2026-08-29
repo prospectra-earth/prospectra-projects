@@ -1,0 +1,42 @@
+resources:
+  jobs:
+    weekly_pipeline:
+      name: "[${bundle.target}] P-02 Weekly Imagery Pipeline"
+      performance_target: STANDARD
+      schedule:
+        quartz_cron_expression: "0 0 6 ? * MON"
+        timezone_id: "Europe/Madrid"
+        pause_status: UNPAUSED
+      max_concurrent_runs: 1
+      parameters:
+        - name: season
+          default: "2026"
+      tasks:
+        - task_key: ingest_imagery
+          notebook_task:
+            notebook_path: ../src/notebooks/02_ingest_imagery.py
+            base_parameters:
+              do_id: "ribera_del_duero"
+              season: "{{job.parameters.season}}"
+              max_cloud_cover: "80"
+        - task_key: download_assets
+          depends_on:
+            - task_key: ingest_imagery
+          notebook_task:
+            notebook_path: ../src/notebooks/03_download_assets.py
+            base_parameters:
+              season: "{{job.parameters.season}}"
+              bands: "red,nir,rededge1,nir08,swir16,scl"
+              max_cloud_cover: "80"
+              bbox_pad_deg: "0.01"
+        - task_key: parcel_indices
+          depends_on:
+            - task_key: download_assets
+          notebook_task:
+            notebook_path: ../src/notebooks/04_parcel_indices.py
+            base_parameters:
+              season: "{{job.parameters.season}}"
+              h3_resolution: "12"
+      email_notifications:
+        on_failure:
+          - franjmartin21@gmail.com

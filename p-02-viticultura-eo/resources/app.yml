@@ -1,0 +1,13 @@
+resources:
+  apps:
+    viticultura_eo_app:
+      name: "p-02-viticultura-eo"
+      description: "[${bundle.target}] P-02 viticultura-eo — parcel/hex vegetation-index explorer"
+      source_code_path: ../app
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+      lifecycle:
+        prevent_destroy: true

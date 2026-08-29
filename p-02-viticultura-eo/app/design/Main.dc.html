@@ -1,0 +1,919 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=DM+Sans:opsz,wght@9..40,300..700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    .vit-root {
+      color-scheme: light;
+      --paper:       #f3eee5;
+      --paper-soft:  #ebe5da;
+      --paper-deep:  #e0d9cb;
+      --ink:         #19150f;
+      --ink-soft:    #2a241c;
+      --muted:       #756a59;
+      --hair:        #d4cbb9;
+      --accent:      #b8421a;
+      --accent-deep: #8f2f0f;
+      --seq-1: #def4de; --seq-2: #b7dfb7; --seq-3: #8fc690; --seq-4: #69ab6c;
+      --seq-5: #478f4b; --seq-6: #23712b; --seq-7: #005010;
+      --status-good: #0ca30c;
+      --status-warning: #fab219;
+      --shadow: 0 8px 24px rgba(25,21,15,0.14);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:where(:not([data-theme="light"])) .vit-root {
+        color-scheme: dark;
+        --paper:       #14110c;
+        --paper-soft:  #1c1712;
+        --paper-deep:  #221b13;
+        --ink:         #f3eee5;
+        --ink-soft:    #e4dbc9;
+        --muted:       #9b8f7c;
+        --hair:        #342c22;
+        --accent:      #e0673b;
+        --accent-deep: #f0a17e;
+        --seq-1: #133716; --seq-2: #1d5522; --seq-3: #2b7532; --seq-4: #3f9446;
+        --seq-5: #59b15e; --seq-6: #7cca7f; --seq-7: #a5e0a5;
+        --shadow: 0 8px 28px rgba(0,0,0,0.5);
+      }
+    }
+    :root[data-theme="dark"] .vit-root {
+      color-scheme: dark;
+      --paper:       #14110c;
+      --paper-soft:  #1c1712;
+      --paper-deep:  #221b13;
+      --ink:         #f3eee5;
+      --ink-soft:    #e4dbc9;
+      --muted:       #9b8f7c;
+      --hair:        #342c22;
+      --accent:      #e0673b;
+      --accent-deep: #f0a17e;
+      --seq-1: #133716; --seq-2: #1d5522; --seq-3: #2b7532; --seq-4: #3f9446;
+      --seq-5: #59b15e; --seq-6: #7cca7f; --seq-7: #a5e0a5;
+      --shadow: 0 8px 28px rgba(0,0,0,0.5);
+    }
+
+    .vit-root, .vit-root * { box-sizing: border-box; }
+    .vit-root {
+      margin: 0; height: 100vh; width: 100%; overflow: hidden;
+      background: var(--paper); color: var(--ink);
+      font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+      display: flex; flex-direction: column;
+    }
+    .vit-root a { color: var(--accent); text-decoration: none; }
+    .vit-root a:hover { color: var(--accent-deep); }
+
+    .mono { font-family: "IBM Plex Mono", monospace; }
+    .serif { font-family: "Fraunces", serif; }
+
+    /* ---- top bar ---- */
+    .topbar {
+      flex: none; height: 56px; display: flex; align-items: center; gap: 14px;
+      padding: 0 20px; border-bottom: 1px solid var(--hair); background: var(--paper);
+    }
+    .brandmark {
+      font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 13px;
+      letter-spacing: 0.16em; text-transform: lowercase; color: var(--ink);
+      display: flex; align-items: center; gap: 6px; flex: none;
+    }
+    .brandmark .dot { color: var(--accent); }
+    .apptitle-wrap { display: flex; flex-direction: column; justify-content: center; border-left: 1px solid var(--hair); padding-left: 14px; margin-left: 2px; }
+    .apptitle { font-family: "Fraunces", serif; font-weight: 400; font-size: 17px; letter-spacing: -0.01em; line-height: 1.1; }
+    .appsubtitle { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .sample-pill {
+      font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); border: 1px solid var(--hair); border-radius: 3px; padding: 5px 9px; white-space: nowrap;
+    }
+
+    /* ---- stat strip ---- */
+    .statstrip {
+      flex: none; display: flex; gap: 0; border-bottom: 1px solid var(--hair); background: var(--paper-soft);
+    }
+    .stat-tile {
+      flex: 1; padding: 9px 20px; border-right: 1px solid var(--hair); min-width: 0;
+    }
+    .stat-tile:last-child { border-right: none; }
+    .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .stat-value { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 17px; color: var(--ink); }
+
+    /* ---- body ---- */
+    .body { flex: 1; min-height: 0; display: flex; position: relative; }
+
+    /* ---- sidebar ---- */
+    .sidebar {
+      flex: none; width: 292px; border-right: 1px solid var(--hair); background: var(--paper);
+      overflow-y: auto; padding: 18px 16px 28px;
+    }
+    .filter-group { margin-bottom: 22px; }
+    .filter-group-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 9px; }
+    .filter-title { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+    .filter-hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+
+    .seg { display: flex; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; }
+    .seg-btn {
+      flex: 1; appearance: none; border: none; background: var(--paper); color: var(--muted);
+      font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 500; cursor: pointer;
+      padding: 11px 8px; min-height: 44px; border-right: 1px solid var(--hair);
+      transition: background 0.12s, color 0.12s;
+    }
+    .seg-btn:last-child { border-right: none; }
+    .seg-btn:hover { background: var(--paper-soft); }
+    .seg-btn.active { background: var(--ink); color: var(--paper); }
+    .seg-btn .sub { display: block; font-size: 10px; opacity: 0.75; margin-top: 1px; }
+
+    .chiprow { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      appearance: none; border: 1px solid var(--hair); background: var(--paper); color: var(--ink-soft);
+      font-family: "IBM Plex Mono", monospace; font-size: 12px; border-radius: 20px; cursor: pointer;
+      padding: 8px 13px; min-height: 36px; transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .chip:hover { background: var(--paper-soft); }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; }
+    .switchlabel { font-size: 13px; color: var(--ink-soft); }
+    .switch { position: relative; width: 38px; height: 22px; flex: none; border-radius: 12px; border: 1px solid var(--hair); background: var(--paper-deep); cursor: pointer; }
+    .switch.on { background: var(--accent); border-color: var(--accent); }
+    .switch .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); transition: left 0.14s; }
+    .switch.on .knob { left: 18px; background: #fff; }
+
+    .checkrow { display: flex; align-items: center; gap: 10px; padding: 8px 0; min-height: 40px; cursor: pointer; }
+    .checkbox { width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1px solid var(--hair); background: var(--paper); display: flex; align-items: center; justify-content: center; }
+    .checkbox.on { background: var(--ink); border-color: var(--ink); }
+    .checkbox svg { width: 12px; height: 12px; stroke: var(--paper); fill: none; }
+    .checklabel { font-size: 13px; color: var(--ink-soft); flex: 1; }
+    .swatchdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+    .reset-link { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.05em; color: var(--muted); background: none; border: none; cursor: pointer; padding: 4px 0; text-transform: uppercase; }
+    .reset-link:hover { color: var(--accent); }
+
+    /* ---- map area ---- */
+    .mapwrap { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--paper-deep); }
+    .mapcard { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+    .mapsvg { width: 100%; height: 100%; display: block; touch-action: none; }
+    .mapsvg.pannable { cursor: grab; }
+    .mapsvg.grabbing { cursor: grabbing; }
+    .boundary { fill: var(--paper-soft); stroke: var(--ink-soft); stroke-width: 1.2; stroke-opacity: 0.35; }
+
+    .zoomctrl { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 4; }
+    .zoombtn {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--hair); background: var(--paper);
+      box-shadow: var(--shadow); cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-family: "IBM Plex Mono", monospace; font-size: 16px; line-height: 1; color: var(--ink);
+    }
+    .zoombtn:hover { background: var(--paper-soft); }
+    .zoombtn.reset { font-size: 13px; }
+    .zoomlabel { font-family: "IBM Plex Mono", monospace; font-size: 9.5px; color: var(--muted); text-align: center; }
+    .cell { cursor: pointer; transition: opacity 0.15s; }
+    .cell:hover { filter: brightness(1.06); }
+    .munilabel { font-family: "IBM Plex Mono", monospace; font-size: 9.5px; fill: var(--muted); letter-spacing: 0.02em; }
+
+    .legend { position: absolute; left: 16px; bottom: 16px; background: var(--paper); border: 1px solid var(--hair); border-radius: 8px; padding: 11px 13px; box-shadow: var(--shadow); min-width: 190px; }
+    .legend-title { font-size: 11px; color: var(--muted); margin-bottom: 7px; }
+    .legend-bar { height: 10px; border-radius: 3px; background: linear-gradient(to right, var(--seq-1), var(--seq-2), var(--seq-3), var(--seq-4), var(--seq-5), var(--seq-6), var(--seq-7)); }
+    .legend-scale { display: flex; justify-content: space-between; margin-top: 5px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted); }
+    .legend-quality { display: flex; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair); }
+    .legend-quality-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-soft); }
+
+    .mapmeta { position: absolute; top: 14px; right: 16px; display: flex; gap: 8px; }
+    .mapmeta-pill { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--muted); background: var(--paper); border: 1px solid var(--hair); border-radius: 20px; padding: 6px 11px; box-shadow: var(--shadow); }
+
+    /* ---- time bar ---- */
+    .timebar { flex: none; display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-top: 1px solid var(--hair); background: var(--paper); }
+    .playbtn {
+      flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--hair); background: var(--paper);
+      display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink);
+    }
+    .playbtn:hover { background: var(--paper-soft); }
+    .playbtn svg { width: 16px; height: 16px; }
+    .dateline { flex: 1; position: relative; padding-top: 12px; }
+    .slider {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 3px; border-radius: 2px;
+      background: var(--hair); outline: none; cursor: pointer; margin: 0; display: block;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); border: 3px solid var(--paper); box-shadow: 0 0 0 1px var(--hair); cursor: pointer;
+    }
+    .slider::-moz-range-thumb {
+      width: 22px; height: 22px; border-radius: 50%; background: var(--accent); border: 3px solid var(--paper); box-shadow: 0 0 0 1px var(--hair); cursor: pointer;
+    }
+    .ticks { position: absolute; top: 0; left: 0; right: 0; height: 8px; }
+    .tick { position: absolute; top: 0; width: 1px; height: 6px; background: var(--hair); }
+    .datelabel { flex: none; width: 132px; text-align: right; font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-soft); }
+    .datelabel .doy { display: block; font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+    /* ---- inspector ---- */
+    .inspector {
+      position: absolute; top: 0; right: 0; bottom: 0; width: 320px; background: var(--paper);
+      border-left: 1px solid var(--hair); box-shadow: var(--shadow); z-index: 5; overflow-y: auto; padding: 18px 18px 24px;
+    }
+    .inspector-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+    .inspector-id { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink); word-break: break-all; }
+    .inspector-kind { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+    .closebtn { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--hair); background: var(--paper); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); margin-left: 10px; }
+    .closebtn:hover { background: var(--paper-soft); color: var(--ink); }
+    .closebtn svg { width: 14px; height: 14px; }
+
+    .inspector-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--hair); }
+    .inspector-row .k { font-size: 12px; color: var(--muted); }
+    .inspector-row .v { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink); }
+    .badge { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; padding: 3px 8px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; }
+    .badge.good { color: var(--status-good); border: 1px solid var(--status-good); }
+    .badge.warn { color: #8a6300; border: 1px solid var(--status-warning); background: rgba(250,178,25,0.14); }
+
+    .spark-section { margin-top: 18px; }
+    .spark-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .spark-values { display: flex; justify-content: space-between; margin-top: 8px; }
+    .spark-stat { }
+    .spark-stat .k { font-size: 10.5px; color: var(--muted); }
+    .spark-stat .v { font-family: "IBM Plex Mono", monospace; font-size: 15px; color: var(--ink); }
+
+    .inspector-note { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hair); }
+  </style>
+</helmet>
+
+<div class="vit-root">
+
+  <div class="topbar">
+    <div class="brandmark">prospectra<span class="dot">·</span></div>
+    <div class="apptitle-wrap">
+      <div class="apptitle">viticultura-eo</div>
+      <div class="appsubtitle">DO Ribera del Duero &middot; satellite vineyard intelligence</div>
+    </div>
+    <div class="topbar-right">
+      <span class="sample-pill">Illustrative sample data</span>
+    </div>
+  </div>
+
+  <div class="statstrip">
+    <div class="stat-tile">
+      <div class="stat-label">Area in view</div>
+      <div class="stat-value">{{stats.haLabel}} ha</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">{{stats.meanTitle}}</div>
+      <div class="stat-value">{{stats.meanValueLabel}}</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">{{stats.countTitle}}</div>
+      <div class="stat-value">{{stats.countLabel}}</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">{{stats.fourthTitle}}</div>
+      <div class="stat-value">{{stats.fourthLabel}}</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <aside class="sidebar">
+
+      <div class="filter-group">
+        <div class="filter-group-head"><span class="filter-title">Grain</span></div>
+        <div class="seg">
+          <sc-for list="{{grainOptions}}" as="g" hint-placeholder-count="2">
+            <button class="{{g.cls}}" onClick="{{g.pick}}">{{g.label}}<span class="sub">{{g.sub}}</span></button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-group-head"><span class="filter-title">Vegetation index</span></div>
+        <div class="seg">
+          <sc-for list="{{indexOptions}}" as="ix" hint-placeholder-count="3">
+            <button class="{{ix.cls}}" onClick="{{ix.pick}}">{{ix.label}}</button>
+          </sc-for>
+        </div>
+        <div class="filter-hint">{{indexHint}}</div>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-group-head"><span class="filter-title">Season</span></div>
+        <div class="chiprow">
+          <sc-for list="{{seasonOptions}}" as="s" hint-placeholder-count="7">
+            <button class="{{s.cls}}" onClick="{{s.pick}}">{{s.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-group-head"><span class="filter-title">Data quality</span></div>
+        <div class="switchrow">
+          <span class="switchlabel">Shade by reliability</span>
+          <div class="{{qualitySwitchCls}}" onClick="{{toggleQuality}}"><div class="knob"></div></div>
+        </div>
+        <sc-if value="{{isParcelGrain}}" hint-placeholder-val="{{true}}">
+          <div style="margin-top: 8px;">
+            <sc-for list="{{reliabilityOptions}}" as="r" hint-placeholder-count="2">
+              <div class="checkrow" onClick="{{r.toggle}}">
+                <div class="{{r.boxCls}}"><svg viewBox="0 0 16 16"><polyline points="3,8 6.5,12 13,4"></polyline></svg></div>
+                <span class="swatchdot" style="background: {{r.color}}"></span>
+                <span class="checklabel">{{r.label}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{isH3Grain}}" hint-placeholder-val="{{false}}">
+          <div class="filter-hint">reliability_class lives on parcel_obs only &mdash; hex_obs has no per-cell confidence field yet.</div>
+        </sc-if>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-group-head"><span class="filter-title">Municipality</span></div>
+        <sc-for list="{{municipalities}}" as="m" hint-placeholder-count="4">
+          <div class="checkrow" onClick="{{m.toggle}}">
+            <div class="{{m.boxCls}}"><svg viewBox="0 0 16 16"><polyline points="3,8 6.5,12 13,4"></polyline></svg></div>
+            <span class="checklabel">{{m.name}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <button class="reset-link" onClick="{{resetFilters}}">Reset filters</button>
+
+    </aside>
+
+    <main class="mapwrap">
+      <div class="mapcard">
+        <svg class="{{mapSvgCls}}" viewBox="{{mapViewBox}}" preserveAspectRatio="xMidYMid meet" onWheel="{{onMapWheel}}" onMouseDown="{{onMapMouseDown}}" onMouseMove="{{onMapMouseMove}}" onMouseUp="{{onMapMouseUp}}" onMouseLeave="{{onMapMouseUp}}">
+          <path class="boundary" d="{{boundaryPath}}"></path>
+          <g>
+            <sc-for list="{{cells}}" as="cell" hint-placeholder-count="16">
+              <polygon class="cell" points="{{cell.points}}" fill="{{cell.fill}}" stroke="{{cell.stroke}}" stroke-width="{{cell.strokeWidth}}" stroke-dasharray="{{cell.dash}}" opacity="{{cell.opacity}}" onClick="{{cell.pick}}"></polygon>
+            </sc-for>
+          </g>
+          <sc-for list="{{muniLabels}}" as="lab" hint-placeholder-count="4">
+            <text class="munilabel" x="{{lab.x}}" y="{{lab.y}}">{{lab.name}}</text>
+          </sc-for>
+        </svg>
+
+        <div class="mapmeta">
+          <span class="mapmeta-pill">{{stats.countLabel}} {{grainNoun}} shown</span>
+        </div>
+
+        <div class="legend">
+          <div class="legend-title">{{legend.title}}</div>
+          <sc-if value="{{legend.showRamp}}" hint-placeholder-val="{{true}}">
+            <div class="legend-bar"></div>
+            <div class="legend-scale"><span>{{legend.min}}</span><span>{{legend.max}}</span></div>
+          </sc-if>
+          <sc-if value="{{legend.showQuality}}" hint-placeholder-val="{{false}}">
+            <div class="legend-quality">
+              <div class="legend-quality-item"><span class="swatchdot" style="background: var(--status-good)"></span>Parcel-level</div>
+              <div class="legend-quality-item"><span class="swatchdot" style="background: var(--status-warning)"></span>Aggregate-only</div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div class="zoomctrl">
+          <button class="zoombtn" onClick="{{zoomIn}}" title="Zoom in">+</button>
+          <div class="zoomlabel">{{zoomLabel}}</div>
+          <button class="zoombtn" onClick="{{zoomOut}}" title="Zoom out">&minus;</button>
+          <button class="zoombtn reset" onClick="{{resetView}}" title="Reset view">&#8634;</button>
+        </div>
+      </div>
+
+      <div class="timebar">
+        <button class="playbtn" onClick="{{togglePlay}}">
+          <sc-if value="{{isPlaying}}" hint-placeholder-val="{{false}}">
+            <svg viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="4" width="4" height="12" rx="1"></rect><rect x="11" y="4" width="4" height="12" rx="1"></rect></svg>
+          </sc-if>
+          <sc-if value="{{isNotPlaying}}" hint-placeholder-val="{{true}}">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 4 L16 10 L6 16 Z"></path></svg>
+          </sc-if>
+        </button>
+        <div class="dateline">
+          <div class="ticks">
+            <sc-for list="{{dateTicks}}" as="t" hint-placeholder-count="10">
+              <div class="tick" style="left: {{t.pct}}%"></div>
+            </sc-for>
+          </div>
+          <input class="slider" type="range" min="0" max="{{maxDateIndex}}" step="1" value="{{dateIndex}}" onChange="{{onSliderChange}}" />
+        </div>
+        <div class="datelabel">{{currentDateLabel}}<span class="doy">day {{currentDoy}} of season {{season}}</span></div>
+      </div>
+    </main>
+
+    <sc-if value="{{hasSelection}}" hint-placeholder-val="{{false}}">
+      <aside class="inspector">
+        <div class="inspector-head">
+          <div>
+            <div class="inspector-id">{{selected.id}}</div>
+            <div class="inspector-kind">{{selected.kindLabel}}</div>
+          </div>
+          <button class="closebtn" onClick="{{closeInspector}}"><svg viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.6" fill="none"><line x1="3" y1="3" x2="13" y2="13"></line><line x1="13" y1="3" x2="3" y2="13"></line></svg></button>
+        </div>
+
+        <div class="inspector-row"><span class="k">Municipio</span><span class="v">{{selected.muni}}</span></div>
+        <div class="inspector-row"><span class="k">Area</span><span class="v">{{selected.area}}</span></div>
+        <sc-if value="{{selected.showReliability}}" hint-placeholder-val="{{false}}">
+          <div class="inspector-row">
+            <span class="k">reliability_class</span>
+            <span class="{{selected.badgeCls}}">{{selected.reliabilityLabel}}</span>
+          </div>
+          <div class="inspector-row"><span class="k">pct_valid</span><span class="v">{{selected.pctValid}}</span></div>
+        </sc-if>
+
+        <div class="spark-section">
+          <div class="spark-title">{{selected.sparkTitle}} &mdash; season {{season}}</div>
+          <svg viewBox="0 0 284 64" width="100%" height="64">
+            <path d="{{selected.sparkArea}}" fill="var(--seq-6)" opacity="0.10"></path>
+            <path d="{{selected.sparkLine}}" fill="none" stroke="var(--seq-6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="{{selected.sparkDotX}}" cy="{{selected.sparkDotY}}" r="4" fill="var(--accent)" stroke="var(--paper)" stroke-width="2"></circle>
+          </svg>
+          <div class="spark-values">
+            <div class="spark-stat"><div class="k">mean</div><div class="v">{{selected.meanNow}}</div></div>
+            <div class="spark-stat"><div class="k">p50</div><div class="v">{{selected.p50Now}}</div></div>
+            <div class="spark-stat"><div class="k">std</div><div class="v">{{selected.stdNow}}</div></div>
+          </div>
+        </div>
+
+        <div class="inspector-note">{{selected.note}}</div>
+      </aside>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+
+var DOY_DATES = [95,103,110,118,123,131,138,146,151,159,166,174,181,189,196,204,211,219,226,234,241,249,256,264,271,279,286,294];
+var SEASONS = [2019,2020,2021,2022,2023,2024,2025];
+var MUNI_NAMES = ["Peñafiel", "Roa", "Aranda de Duero", "San Esteban de Gormaz"];
+var DOMAINS = {
+  ndvi: { min: 0.10, max: 0.80, label: "NDVI" },
+  ndre: { min: 0.05, max: 0.55, label: "NDRE" },
+  ndmi: { min: -0.10, max: 0.35, label: "NDMI" }
+};
+var MONTH_LEN = [31,28,31,30,31,30,31,31,30,31,30,31];
+var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+function smoothstep(e0, e1, x) { var t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); }
+function seededRand(seed) { var s = Math.sin(seed * 127.1) * 43758.5453; return s - Math.floor(s); }
+function seasonCurve(doy) {
+  var green = smoothstep(88, 155, doy);
+  var senesce = 1 - smoothstep(228, 298, doy);
+  return clamp(green * senesce, 0, 1);
+}
+function doyToLabel(doy) {
+  var d = doy;
+  var m = 0;
+  while (m < 12 && d > MONTH_LEN[m]) { d -= MONTH_LEN[m]; m++; }
+  return d + " " + MONTH_ABBR[m];
+}
+function valueFor(cell, indexKey, doy, season) {
+  var base = seasonCurve(doy) * cell.amp;
+  var seasonJitter = (seededRand(season * 31 + cell.seed) - 0.5) * 0.15;
+  var dayNoise = (seededRand(doy * 3.1 + cell.seed) - 0.5) * 0.06;
+  var v;
+  if (indexKey === "ndvi") v = 0.12 + 0.62 * Math.max(0, base + seasonJitter) + dayNoise;
+  else if (indexKey === "ndre") v = 0.06 + 0.46 * Math.max(0, base + seasonJitter) + dayNoise * 0.7;
+  else v = -0.08 + 0.40 * Math.max(0, base * 0.85 + seasonJitter * 0.6) + dayNoise * 0.8;
+  return v;
+}
+function bucketFor(v, domain) {
+  var t = clamp((v - domain.min) / (domain.max - domain.min), 0, 1);
+  return clamp(Math.floor(t * 7) + 1, 1, 7);
+}
+function centerline(t, w, h) {
+  var cy = h * 0.52;
+  var y = cy + Math.sin(t * Math.PI * 2.1 + 0.4) * 38 + Math.sin(t * Math.PI * 5.3) * 10;
+  var env = 60 + 68 * Math.sin(Math.PI * t) + 18 * Math.sin(t * Math.PI * 3 + 1);
+  return { y: y, halfW: Math.max(16, env * 0.5) };
+}
+function pointInPolygon(x, y, poly) {
+  var inside = false;
+  for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+    var intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+function fmt(v, digits) { return v.toFixed(digits === undefined ? 2 : digits); }
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    var muniFilter = {};
+    MUNI_NAMES.forEach(function (n) { muniFilter[n] = true; });
+    this.state = {
+      grain: "h3",
+      indexKey: "ndvi",
+      season: 2025,
+      dateIndex: 14,
+      playing: false,
+      qualityOverlay: false,
+      selectedId: null,
+      muniFilter: muniFilter,
+      relFilter: { parcel: true, aggregate_only: true },
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      dragging: false,
+      dragLast: null
+    };
+    this._timer = null;
+    this._geometryBuilt = false;
+  }
+
+  componentDidMount() {
+    this.buildGeometry();
+    this._geometryBuilt = true;
+    this.forceUpdate();
+  }
+
+  componentWillUnmount() {
+    if (this._timer) clearInterval(this._timer);
+  }
+
+  buildGeometry() {
+    var W = 1000, H = 460;
+    var nSeg = 60;
+    var top = [], bot = [];
+    for (var i = 0; i <= nSeg; i++) {
+      var t = i / nSeg;
+      var x = 40 + t * (W - 80);
+      var c = centerline(t, W, H);
+      top.push([x, c.y - c.halfW]);
+      bot.push([x, c.y + c.halfW]);
+    }
+    var boundary = top.concat(bot.slice().reverse());
+    this.boundary = boundary;
+    this.boundaryPath = "M " + boundary.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" L ") + " Z";
+
+    this.muniLabels = [0.08, 0.34, 0.60, 0.87].map(function (t, i) {
+      var x = 40 + t * (W - 80);
+      var c = centerline(t, W, H);
+      return { x: x.toFixed(1), y: (c.y - c.halfW - 10).toFixed(1), name: MUNI_NAMES[i] };
+    });
+
+    var r = 12.5;
+    var hexW = Math.sqrt(3) * r;
+    var hexH = 2 * r;
+    var vStep = hexH * 0.75;
+    var cells = [];
+    var muniEdges = [0, 0.30, 0.55, 0.78, 1.01];
+    var seed = 1;
+    for (var row = 0; row * vStep < H; row++) {
+      var yc = 14 + row * vStep;
+      var xOffset = (row % 2 === 1) ? hexW / 2 : 0;
+      for (var col = 0; col * hexW + xOffset < W; col++) {
+        var xc = 20 + xOffset + col * hexW;
+        if (!pointInPolygon(xc, yc, boundary)) continue;
+        var tPos = (xc - 40) / (W - 80);
+        var muniIdx = 0;
+        for (var mi = 0; mi < 4; mi++) { if (tPos >= muniEdges[mi] && tPos < muniEdges[mi + 1]) muniIdx = mi; }
+        seed += 1;
+        var angles = [30, 90, 150, 210, 270, 330];
+        var hexPts = angles.map(function (a) {
+          var rad = a * Math.PI / 180;
+          return (xc + r * Math.cos(rad)).toFixed(1) + "," + (yc + r * Math.sin(rad)).toFixed(1);
+        }).join(" ");
+        var nPts = 5 + Math.floor(seededRand(seed * 3.3) * 2);
+        var parcelPts = [];
+        for (var k = 0; k < nPts; k++) {
+          var a2 = (k / nPts) * Math.PI * 2 + seededRand(seed * 9.1 + k) * 0.5;
+          var rr = r * (0.55 + seededRand(seed * 5.7 + k * 1.3) * 0.6);
+          parcelPts.push((xc + rr * Math.cos(a2)).toFixed(1) + "," + (yc + rr * Math.sin(a2)).toFixed(1));
+        }
+        var reliability = seededRand(seed * 2.2) < 0.6 ? "aggregate_only" : "parcel";
+        cells.push({
+          id: (this.state && this.state.grain === "parcel" ? "SIGPAC " : "H3 ") + "seed",
+          seed: seed,
+          muni: MUNI_NAMES[muniIdx],
+          amp: 0.72 + seededRand(seed * 1.9) * 0.55,
+          reliability: reliability,
+          pctValid: 0.52 + seededRand(seed * 4.4) * 0.44,
+          hexPoints: hexPts,
+          parcelPoints: parcelPts.join(" "),
+          x: xc, y: yc
+        });
+        if (cells.length >= 480) break;
+      }
+      if (cells.length >= 480) break;
+    }
+    cells.forEach(function (c, idx) {
+      var h3id = "8c3966a" + (100000 + idx * 7 + Math.floor(seededRand(c.seed) * 90)).toString(16) + "ffff";
+      var prov = ["BU", "VA", "SO", "SG"][MUNI_NAMES.indexOf(c.muni)];
+      var recinto = prov + "-" + String(20000 + idx * 3).padStart(6, "0") + "-VI";
+      c.h3Id = h3id;
+      c.recintoId = recinto;
+      c.areaHa = (0.09 + seededRand(c.seed * 6.6) * 1.1);
+    });
+    this.cells = cells;
+  }
+
+  setGrain(g) { this.setState({ grain: g }); }
+  setIndex(k) { this.setState({ indexKey: k }); }
+  setSeason(s) { this.setState({ season: s }); }
+  toggleQuality() { this.setState({ qualityOverlay: !this.state.qualityOverlay }); }
+  toggleMuni(name) {
+    var next = Object.assign({}, this.state.muniFilter);
+    next[name] = !next[name];
+    this.setState({ muniFilter: next });
+  }
+  toggleReliability(key) {
+    var next = Object.assign({}, this.state.relFilter);
+    next[key] = !next[key];
+    this.setState({ relFilter: next });
+  }
+  onSliderChange(e) {
+    this.setState({ dateIndex: parseInt(e.target.value, 10) });
+  }
+  togglePlay() {
+    var self = this;
+    if (this.state.playing) {
+      clearInterval(this._timer);
+      this._timer = null;
+      this.setState({ playing: false });
+    } else {
+      this._timer = setInterval(function () {
+        self.setState(function (s) { return { dateIndex: (s.dateIndex + 1) % DOY_DATES.length }; });
+      }, 650);
+      this.setState({ playing: true });
+    }
+  }
+  selectCell(id) { this.setState({ selectedId: id }); }
+  closeInspector() { this.setState({ selectedId: null }); }
+  resetFilters() {
+    var muniFilter = {};
+    MUNI_NAMES.forEach(function (n) { muniFilter[n] = true; });
+    this.setState({ muniFilter: muniFilter, relFilter: { parcel: true, aggregate_only: true }, qualityOverlay: false });
+  }
+
+  clampPan(panX, panY, zoom) {
+    var vw = 1000 / zoom, vh = 460 / zoom;
+    var maxX = Math.max(0, 1000 - vw), maxY = Math.max(0, 460 - vh);
+    return { panX: clamp(panX, 0, maxX), panY: clamp(panY, 0, maxY) };
+  }
+  zoomTo(newZoomRaw) {
+    var zoom = clamp(newZoomRaw, 1, 6);
+    var oldVw = 1000 / this.state.zoom, oldVh = 460 / this.state.zoom;
+    var cx = this.state.panX + oldVw / 2, cy = this.state.panY + oldVh / 2;
+    var newVw = 1000 / zoom, newVh = 460 / zoom;
+    var p = this.clampPan(cx - newVw / 2, cy - newVh / 2, zoom);
+    this.setState({ zoom: zoom, panX: p.panX, panY: p.panY });
+  }
+  zoomIn() { this.zoomTo(this.state.zoom * 1.4); }
+  zoomOut() { this.zoomTo(this.state.zoom / 1.4); }
+  resetView() { this.setState({ zoom: 1, panX: 0, panY: 0, dragging: false, dragLast: null }); }
+  onMapWheel(e) {
+    var factor = e.deltaY > 0 ? 0.88 : 1.14;
+    this.zoomTo(this.state.zoom * factor);
+  }
+  onMapMouseDown(e) {
+    if (this.state.zoom <= 1.001) return;
+    this.setState({ dragging: true, dragLast: { x: e.clientX, y: e.clientY } });
+  }
+  onMapMouseMove(e) {
+    if (!this.state.dragging || !this.state.dragLast) return;
+    var rect = e.currentTarget.getBoundingClientRect();
+    if (!rect.width) return;
+    var scale = (1000 / this.state.zoom) / rect.width;
+    var dx = (e.clientX - this.state.dragLast.x) * scale;
+    var dy = (e.clientY - this.state.dragLast.y) * scale;
+    var p = this.clampPan(this.state.panX - dx, this.state.panY - dy, this.state.zoom);
+    this.setState({ panX: p.panX, panY: p.panY, dragLast: { x: e.clientX, y: e.clientY } });
+  }
+  onMapMouseUp() {
+    if (this.state.dragging) this.setState({ dragging: false, dragLast: null });
+  }
+
+  renderVals() {
+    var self = this;
+    var state = this.state;
+    var grain = state.grain;
+    var indexKey = state.indexKey;
+    var domain = DOMAINS[indexKey];
+    var doy = DOY_DATES[state.dateIndex];
+
+    if (!this._geometryBuilt) {
+      return {
+        cells: [], muniLabels: [], boundaryPath: "", dateTicks: [],
+        grainOptions: [], indexOptions: [], seasonOptions: [], municipalities: [], reliabilityOptions: [],
+        stats: { haLabel: "—", meanTitle: "Mean", meanValueLabel: "—", countTitle: "Cells", countLabel: "—", fourthTitle: "—", fourthLabel: "—" },
+        legend: { title: "", showRamp: false, showQuality: false, min: "", max: "" },
+        indexHint: "", grainNoun: "cells",
+        qualitySwitchCls: "switch", isParcelGrain: false, isH3Grain: true,
+        isPlaying: false, isNotPlaying: true, currentDateLabel: "", currentDoy: "", season: state.season,
+        maxDateIndex: DOY_DATES.length - 1, dateIndex: state.dateIndex,
+        hasSelection: false, selected: {},
+        mapViewBox: "0 0 1000 460", zoomLabel: "1.0×", mapSvgCls: "mapsvg",
+        togglePlay: function () {}, onSliderChange: function () {}, toggleQuality: function () {}, resetFilters: function () {}, closeInspector: function () {},
+        zoomIn: function () {}, zoomOut: function () {}, resetView: function () {},
+        onMapWheel: function () {}, onMapMouseDown: function () {}, onMapMouseMove: function () {}, onMapMouseUp: function () {}
+      };
+    }
+
+    var visible = this.cells.filter(function (c) {
+      if (!state.muniFilter[c.muni]) return false;
+      if (grain === "parcel" && !state.relFilter[c.reliability]) return false;
+      return true;
+    });
+
+    var sum = 0, qualityCount = 0, pxSum = 0;
+    var items = visible.map(function (c) {
+      var v = valueFor(c, indexKey, doy, state.season);
+      sum += v;
+      var bucket = bucketFor(v, domain);
+      var isSelected = state.selectedId === (grain === "parcel" ? c.recintoId : c.h3Id);
+      var fill, stroke, dash, opacity;
+      var overlayActive = state.qualityOverlay && grain === "parcel";
+      if (overlayActive) {
+        fill = c.reliability === "parcel" ? "var(--status-good)" : "var(--status-warning)";
+        opacity = (0.35 + c.pctValid * 0.55).toFixed(2);
+        stroke = "var(--paper)";
+        dash = "0";
+      } else {
+        fill = "var(--seq-" + bucket + ")";
+        opacity = "1";
+        var aggOnly = grain === "parcel" && c.reliability === "aggregate_only";
+        stroke = aggOnly ? "var(--muted)" : "var(--paper)";
+        dash = aggOnly ? "2,1.6" : "0";
+      }
+      if (c.reliability === "parcel") qualityCount++;
+      pxSum += 2 + seededRand(doy * 1.7 + c.seed) * 2.6;
+      return {
+        points: grain === "parcel" ? c.parcelPoints : c.hexPoints,
+        fill: fill,
+        stroke: isSelected ? "var(--accent)" : stroke,
+        strokeWidth: isSelected ? "2.2" : (grain === "parcel" ? "0.6" : "0.5"),
+        dash: dash,
+        opacity: opacity,
+        pick: function () { self.selectCell(grain === "parcel" ? c.recintoId : c.h3Id); },
+        _ref: c,
+        _v: v
+      };
+    });
+
+    var meanV = items.length ? sum / items.length : 0;
+    var haPerCell = grain === "parcel" ? 0.44 : 0.0307;
+    var haCovered = items.length * haPerCell;
+
+    var stats = {
+      haLabel: haCovered >= 1000 ? (haCovered / 1000).toFixed(1) + "k" : Math.round(haCovered).toLocaleString(),
+      meanTitle: "Mean " + domain.label,
+      meanValueLabel: fmt(meanV, 2),
+      countTitle: grain === "parcel" ? "Parcels shown" : "H3 cells shown",
+      countLabel: items.length.toLocaleString(),
+      fourthTitle: grain === "parcel" ? "Parcel-level" : "Valid px / cell",
+      fourthLabel: grain === "parcel"
+        ? (items.length ? Math.round((qualityCount / items.length) * 100) : 0) + "%"
+        : fmt(items.length ? pxSum / items.length : 0, 1)
+    };
+
+    var grainOptions = [
+      { key: "h3", label: "H3 cells", sub: "res 12" },
+      { key: "parcel", label: "Parcels", sub: "SIGPAC" }
+    ].map(function (g) {
+      return { label: g.label, sub: g.sub, cls: "seg-btn" + (grain === g.key ? " active" : ""), pick: function () { self.setGrain(g.key); } };
+    });
+
+    var indexOptions = ["ndvi", "ndre", "ndmi"].map(function (k) {
+      return { label: DOMAINS[k].label, cls: "seg-btn" + (indexKey === k ? " active" : ""), pick: function () { self.setIndex(k); } };
+    });
+
+    var seasonOptions = SEASONS.map(function (s) {
+      return { label: String(s), cls: "chip" + (state.season === s ? " active" : ""), pick: function () { self.setSeason(s); } };
+    });
+
+    var municipalities = MUNI_NAMES.map(function (n) {
+      var on = !!state.muniFilter[n];
+      return { name: n, boxCls: "checkbox" + (on ? " on" : ""), toggle: function () { self.toggleMuni(n); } };
+    });
+
+    var reliabilityOptions = [
+      { key: "parcel", label: "Parcel-level (reliable)", color: "var(--status-good)" },
+      { key: "aggregate_only", label: "Aggregate-only", color: "var(--status-warning)" }
+    ].map(function (r) {
+      var on = !!state.relFilter[r.key];
+      return { label: r.label, color: r.color, boxCls: "checkbox" + (on ? " on" : ""), toggle: function () { self.toggleReliability(r.key); } };
+    });
+
+    var maxIdx = DOY_DATES.length - 1;
+    var dateTicks = DOY_DATES.map(function (d, i) { return { pct: (i / maxIdx * 100).toFixed(2) }; });
+
+    var indexHints = {
+      ndvi: "Chlorophyll / canopy density — from geom_b05, 10 m bands.",
+      ndre: "Red-edge, saturates later on dense canopy — preferred near peak.",
+      ndmi: "Canopy moisture, SWIR-based — from geom_b10, 20 m bands."
+    };
+
+    var legend = {
+      title: domain.label + " — " + doyToLabel(doy) + " " + state.season,
+      showRamp: !(state.qualityOverlay && grain === "parcel"),
+      showQuality: state.qualityOverlay && grain === "parcel",
+      min: fmt(domain.min, 2),
+      max: fmt(domain.max, 2)
+    };
+    if (legend.showQuality) legend.title = "Reliability — parcel_obs";
+
+    var selected = {};
+    var hasSelection = !!state.selectedId;
+    if (hasSelection) {
+      var found = null;
+      for (var i = 0; i < this.cells.length; i++) {
+        var c2 = this.cells[i];
+        if ((grain === "parcel" ? c2.recintoId : c2.h3Id) === state.selectedId) { found = c2; break; }
+      }
+      if (found) {
+        var vals = DOY_DATES.map(function (d) { return valueFor(found, indexKey, d, state.season); });
+        var vmin = domain.min, vmax = domain.max;
+        var W = 284, H = 64, pad = 4;
+        var pts = vals.map(function (v, i) {
+          var x = pad + (i / (DOY_DATES.length - 1)) * (W - pad * 2);
+          var t = clamp((v - vmin) / (vmax - vmin), 0, 1);
+          var y = H - pad - t * (H - pad * 2);
+          return [x, y];
+        });
+        var linePath = "M " + pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" L ");
+        var areaPath = linePath + " L " + pts[pts.length - 1][0].toFixed(1) + "," + (H - pad) + " L " + pts[0][0].toFixed(1) + "," + (H - pad) + " Z";
+        var curV = vals[state.dateIndex];
+        var curPt = pts[state.dateIndex];
+        var std = 0.02 + seededRand(found.seed * 8.8) * 0.05;
+        selected = {
+          id: grain === "parcel" ? found.recintoId : found.h3Id,
+          kindLabel: grain === "parcel" ? "SIGPAC parcel" : "H3 res-12 cell",
+          muni: found.muni,
+          area: grain === "parcel" ? fmt(found.areaHa, 2) + " ha" : "~0.031 ha (1 cell)",
+          showReliability: grain === "parcel",
+          reliabilityLabel: found.reliability === "parcel" ? "parcel" : "aggregate_only",
+          badgeCls: "badge " + (found.reliability === "parcel" ? "good" : "warn"),
+          pctValid: Math.round(found.pctValid * 100) + "%",
+          sparkTitle: domain.label + " time series",
+          sparkLine: linePath,
+          sparkArea: areaPath,
+          sparkDotX: curPt[0].toFixed(1),
+          sparkDotY: curPt[1].toFixed(1),
+          meanNow: fmt(curV, 2),
+          p50Now: fmt(curV - 0.01 + seededRand(found.seed + doy) * 0.02, 2),
+          stdNow: fmt(std, 2),
+          note: grain === "parcel"
+            ? "Values are per-parcel zonal stats over the pure-pixel buffer (geom_b05/geom_b10)."
+            : "hex_obs carries mean index + pixel counts; no recinto-level reliability at this grain."
+        };
+      } else {
+        hasSelection = false;
+      }
+    }
+
+    var mapVw = 1000 / state.zoom, mapVh = 460 / state.zoom;
+    var mapViewBox = state.panX.toFixed(2) + " " + state.panY.toFixed(2) + " " + mapVw.toFixed(2) + " " + mapVh.toFixed(2);
+    var mapSvgCls = "mapsvg" + (state.zoom > 1.001 ? (state.dragging ? " grabbing" : " pannable") : "");
+
+    return {
+      cells: items,
+      muniLabels: this.muniLabels,
+      boundaryPath: this.boundaryPath,
+      mapViewBox: mapViewBox,
+      zoomLabel: state.zoom.toFixed(1) + "×",
+      mapSvgCls: mapSvgCls,
+      zoomIn: function () { self.zoomIn(); },
+      zoomOut: function () { self.zoomOut(); },
+      resetView: function () { self.resetView(); },
+      onMapWheel: function (e) { self.onMapWheel(e); },
+      onMapMouseDown: function (e) { self.onMapMouseDown(e); },
+      onMapMouseMove: function (e) { self.onMapMouseMove(e); },
+      onMapMouseUp: function (e) { self.onMapMouseUp(e); },
+      grainOptions: grainOptions,
+      indexOptions: indexOptions,
+      seasonOptions: seasonOptions,
+      municipalities: municipalities,
+      reliabilityOptions: reliabilityOptions,
+      isParcelGrain: grain === "parcel",
+      isH3Grain: grain === "h3",
+      indexHint: indexHints[indexKey],
+      grainNoun: grain === "parcel" ? "parcels" : "cells",
+      stats: stats,
+      legend: legend,
+      qualitySwitchCls: "switch" + (state.qualityOverlay ? " on" : ""),
+      toggleQuality: function () { self.toggleQuality(); },
+      resetFilters: function () { self.resetFilters(); },
+      dateTicks: dateTicks,
+      maxDateIndex: maxIdx,
+      dateIndex: state.dateIndex,
+      onSliderChange: function (e) { self.onSliderChange(e); },
+      isPlaying: state.playing,
+      isNotPlaying: !state.playing,
+      togglePlay: function () { self.togglePlay(); },
+      currentDateLabel: doyToLabel(doy) + " " + state.season,
+      currentDoy: String(doy),
+      season: state.season,
+      hasSelection: hasSelection,
+      selected: selected,
+      closeInspector: function () { self.closeInspector(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

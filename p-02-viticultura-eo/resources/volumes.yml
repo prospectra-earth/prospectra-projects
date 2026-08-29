@@ -1,0 +1,10 @@
+resources:
+  volumes:
+    raw:
+      catalog_name: ${resources.catalogs.winery_satellite.name}
+      schema_name: ${resources.schemas.bronze.name}
+      name: raw
+      volume_type: MANAGED
+      comment: "SIGPAC zips, GeoBrix wheel, staged Sentinel-2 COGs"
+      lifecycle:
+        prevent_destroy: true

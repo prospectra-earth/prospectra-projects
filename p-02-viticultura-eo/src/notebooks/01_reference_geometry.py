@@ -29,6 +29,8 @@
 # MAGIC | `ref_vineyard_parcels` | ~70k | `uso='VI'` parcels clipped to the DO — **the deliverable** |
 # MAGIC | `ref_uso_audit` | small | Area by land-use code; evidence for the VI-only decision |
 # MAGIC
+# MAGIC `ref_parcel_h3_xwalk` is a **view**, not a table — see the note above the parcel write cell.
+# MAGIC
 # MAGIC Everything else is a temp view.
 # MAGIC
 # MAGIC ### Two phases, manual download in between
@@ -64,6 +66,7 @@ dbutils.widgets.text("do_boundary_zip", "calidaddiferenciada_vinos.zip")
 dbutils.widgets.text("sigpac_year", "2025")
 dbutils.widgets.text("min_frac_inside", "0.01")
 dbutils.widgets.text("search_buffer_m", "2000")
+dbutils.widgets.text("h3_xwalk_resolution", "13")
 
 DO_ID = dbutils.widgets.get("do_id")
 DO_ZON_CO_ID = int(dbutils.widgets.get("do_zon_co_id"))
@@ -72,8 +75,8 @@ SIGPAC_YEAR = int(dbutils.widgets.get("sigpac_year"))
 SIGPAC_DIR = f"{VOLUME_PATH}/sigpac"
 MIN_FRAC_INSIDE = float(dbutils.widgets.get("min_frac_inside"))
 SEARCH_BUFFER_M = int(dbutils.widgets.get("search_buffer_m"))
+H3_XWALK_RES = int(dbutils.widgets.get("h3_xwalk_resolution"))
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {NS}")
 dbutils.fs.mkdirs(f"{SIGPAC_DIR}/{SIGPAC_YEAR}")
 print(f"{DO_ID} | SIGPAC {SIGPAC_YEAR} | {SIGPAC_DIR}/{SIGPAC_YEAR}")
 
@@ -367,6 +370,27 @@ if paths:
 #
 # ST_Buffer(geom, 0) repairs self-intersections in place — ST_MakeValid is unavailable here.
 # Measured: 114 of 69,785 repaired, 0.0% change in area. Dropping them would lose real vineyard.
+#
+# geom_b05/geom_b10 are the pure-pixel extents NB04 zonal-aggregates against: a pixel centre must
+# sit half a pixel from the boundary, so a -5m buffer clears the 10m bands (NDVI) and a -10m buffer
+# clears the 20m bands (NDRE, NDMI) — Sentinel-2 resolution, not the -15m Landsat figure in spec D5.
+# Buffered geometry is measured in 25830 (metric) then stored back in 4258, per repo convention.
+# Parcels that buffer to empty are flagged via reliability_class, not dropped: they are ~60% of
+# parcels but only ~10% of area, and dropping them would bias every municipality total toward
+# large estates.
+#
+# h3_cells_res13: parcel<->hex assignment lives here, not in NB04 — it's a pure function of
+# parcel geometry (never depends on satellite data), computed once per SIGPAC vintage same as
+# geom_b05/geom_b10. Res 13, not res 12: this is an ASSIGNMENT resolution, not a measurement
+# resolution — NB04's hex_obs still aggregates satellite pixels at res 12 (matched to the 10 m
+# pixel size), but a finer res-13 hex hugs a thin vineyard-strip boundary more tightly, minimizing
+# (not eliminating) the case of one hex spanning two parcels. h3_coverash3 (not polyfillash3, which
+# is centroid-based and measured to drop 10-12% of thin parcels entirely) against the parcel's
+# full unbuffered geometry -- not geom_b05/geom_b10, which stay reserved for zonal stats.
+# ref_parcel_h3_xwalk below is a VIEW that explodes this array, not a materialized table: the
+# relationship is a fixed fact about the parcel, so there is nothing to separately track staleness
+# for. Any res-12 rollup (to join against hex_obs) is likewise left as a query-time
+# h3_toparent(h3_cell_id, 12) — free (pure index arithmetic), never precomputed.
 
 if paths:
     spark.sql(f"""
@@ -382,22 +406,65 @@ if paths:
 
     spark.sql(f"""
         CREATE OR REPLACE TABLE {T_PARCELS} CLUSTER BY (codigo_municipio) AS
-        SELECT {SIGPAC_YEAR} AS sigpac_year,
-               p.recinto_id, p.codigo_municipio, p.codigo_catastral, p.municipio,
-               p.uso_sigpac, p.superficie_m2, p.perimetro_m, p.coef_regadio,
-               p.poligono, p.parcela, p.recinto,
-               CASE WHEN ST_IsValid(p.geom) THEN p.geom ELSE ST_Buffer(p.geom, 0) END AS geometry,
-               NOT ST_IsValid(p.geom) AS geometry_repaired,
+        WITH base AS (
+            SELECT {SIGPAC_YEAR} AS sigpac_year,
+                   p.recinto_id, p.codigo_municipio, p.codigo_catastral, p.municipio,
+                   p.uso_sigpac, p.superficie_m2, p.perimetro_m, p.coef_regadio,
+                   p.poligono, p.parcela, p.recinto,
+                   CASE WHEN ST_IsValid(p.geom) THEN p.geom ELSE ST_Buffer(p.geom, 0) END AS geometry,
+                   NOT ST_IsValid(p.geom) AS geometry_repaired
+            FROM v_parcels p
+            JOIN {T_BOUNDARY} b ON ST_Intersects(p.geom, b.geometry)
+        ),
+        buffered AS (
+            SELECT *,
+                   ST_Buffer(ST_Transform(geometry, {CRS_METRIC}), -5) AS geom_b05_m,
+                   ST_Buffer(ST_Transform(geometry, {CRS_METRIC}), -10) AS geom_b10_m
+            FROM base
+        )
+        SELECT sigpac_year, recinto_id, codigo_municipio, codigo_catastral, municipio,
+               uso_sigpac, superficie_m2, perimetro_m, coef_regadio,
+               poligono, parcela, recinto,
+               geometry, geometry_repaired,
+               ST_Transform(geom_b05_m, {CRS_STORE}) AS geom_b05,
+               ST_Transform(geom_b10_m, {CRS_STORE}) AS geom_b10,
+               ST_Area(geom_b05_m) AS area_b05_m2,
+               ST_Area(geom_b10_m) AS area_b10_m2,
+               CASE WHEN ST_Area(geom_b05_m) > 0
+                    THEN 2 * ST_Area(geom_b05_m) / ST_Perimeter(geom_b05_m) ELSE 0.0 END AS min_width_b05_m,
+               CASE WHEN ST_Area(geom_b10_m) > 0
+                    THEN 2 * ST_Area(geom_b10_m) / ST_Perimeter(geom_b10_m) ELSE 0.0 END AS min_width_b10_m,
+               ST_Area(geom_b05_m) > 0 AS has_pure_pixel_10m,
+               ST_Area(geom_b10_m) > 0 AS has_pure_pixel_20m,
+               CASE WHEN ST_Area(geom_b05_m) > 0 THEN 'parcel' ELSE 'aggregate_only' END AS reliability_class,
+               h3_coverash3(ST_AsBinary(geometry), {H3_XWALK_RES}) AS h3_cells_res13,
                current_timestamp() AS loaded_at
-        FROM v_parcels p
-        JOIN {T_BOUNDARY} b ON ST_Intersects(p.geom, b.geometry)
+        FROM buffered
+    """)
+
+    # migration guard: an earlier build of NB04 (before this crosswalk moved here) created
+    # ref_parcel_h3_xwalk as a TABLE — CREATE OR REPLACE VIEW cannot replace a table in place.
+    _existing = spark.sql(f"""
+        SELECT table_type FROM {CATALOG}.information_schema.tables
+        WHERE table_schema = '{SCHEMA_BRONZE}' AND table_name = 'ref_parcel_h3_xwalk'
+    """).collect()
+    if _existing and _existing[0].table_type != "VIEW":
+        spark.sql(f"DROP TABLE {NS}.ref_parcel_h3_xwalk")
+
+    spark.sql(f"""
+        CREATE OR REPLACE VIEW {NS}.ref_parcel_h3_xwalk AS
+        SELECT recinto_id, explode(h3_cells_res13) AS h3_cell_id
+        FROM {T_PARCELS}
     """)
 
     display(spark.sql(f"""
         SELECT count(*) AS parcels, count(DISTINCT codigo_municipio) AS municipios,
                sum(CASE WHEN geometry_repaired THEN 1 ELSE 0 END) AS repaired,
                round(sum(superficie_m2)/10000, 1) AS ha,
-               round(median(superficie_m2)/10000, 3) AS median_ha
+               round(median(superficie_m2)/10000, 3) AS median_ha,
+               sum(CASE WHEN has_pure_pixel_10m THEN 1 ELSE 0 END) AS has_pure_pixel_10m_n,
+               sum(CASE WHEN reliability_class = 'parcel' THEN 1 ELSE 0 END) AS reliability_parcel_n,
+               round(avg(size(h3_cells_res13)), 1) AS avg_h3_cells_res13
         FROM {T_PARCELS}
     """))
 
@@ -489,6 +556,25 @@ if paths:
         FROM {T_PARCELS} GROUP BY codigo_municipio, municipio ORDER BY vi_ha DESC
     """))
     print("cross-check the top rows against the Consejo's 'Superficie de Viñedo por Municipio'")
+
+# COMMAND ----------
+
+# DBTITLE 1,Q6 — h3_cells_res13 / ref_parcel_h3_xwalk sanity
+# coverash3 measured to drop 0% of parcels (vs. 10-12% for polyfillash3) — any parcel with zero
+# cells here is a regression, not an expected edge case. raise, not informational.
+
+if paths:
+    empty = spark.sql(f"""
+        SELECT count(*) c FROM {T_PARCELS} WHERE h3_cells_res13 IS NULL OR size(h3_cells_res13) = 0
+    """).first().c
+    assert empty == 0, f"{empty} parcels have zero h3_cells_res13 — coverash3 regression, investigate"
+
+    display(spark.sql(f"""
+        SELECT count(*) AS xwalk_rows, count(DISTINCT recinto_id) AS parcels,
+               count(DISTINCT h3_cell_id) AS distinct_hexes
+        FROM {NS}.ref_parcel_h3_xwalk
+    """))
+    print("Q6 ok — 0 parcels with an empty h3_cells_res13 array")
 
 # COMMAND ----------
 

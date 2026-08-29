@@ -1,0 +1,7 @@
+resources:
+  catalogs:
+    winery_satellite:
+      name: ${var.catalog}
+      comment: "P-02 viticultura-eo — Ribera del Duero satellite vineyard intelligence"
+      lifecycle:
+        prevent_destroy: true

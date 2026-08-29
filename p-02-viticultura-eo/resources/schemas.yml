@@ -1,0 +1,14 @@
+resources:
+  schemas:
+    bronze:
+      catalog_name: ${resources.catalogs.winery_satellite.name}
+      name: ${var.schema_bronze}
+      comment: "Reference geometry, SIGPAC parcels, STAC/asset catalogs — raw/operational"
+      lifecycle:
+        prevent_destroy: true
+    silver:
+      catalog_name: ${resources.catalogs.winery_satellite.name}
+      name: ${var.schema_silver}
+      comment: "Parcel/hex vegetation-index observations — analysis-ready"
+      lifecycle:
+        prevent_destroy: true

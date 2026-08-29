@@ -3,7 +3,7 @@
 # fetch_sigpac.sh — download the SIGPAC municipality zips listed by NB01's manifest.
 #
 # NB01 Phase 1d writes one URL per line to:
-#     /Volumes/geospatial/ribera_duero/raw/sigpac/sigpac_urls_<year>.txt
+#     /Volumes/winery_satellite/bronze/raw/sigpac/sigpac_urls_<year>.txt
 #
 # This reads those lists, downloads what is missing, and uploads into the matching year
 # folder in the Volume. Already-present files are skipped, so it is safe to re-run after
@@ -15,7 +15,7 @@
 #
 # Env
 #     DATABRICKS_PROFILE   CLI profile           (default: DEFAULT)
-#     SIGPAC_VOLUME        Volume sigpac folder  (default: /Volumes/geospatial/ribera_duero/raw/sigpac)
+#     SIGPAC_VOLUME        Volume sigpac folder  (default: /Volumes/winery_satellite/bronze/raw/sigpac)
 #     PARALLEL             concurrent downloads  (default: 6)
 #
 # Requires an authenticated Databricks CLI — the Volume is not mounted locally.
@@ -26,7 +26,7 @@
 set -euo pipefail
 
 PROFILE="${DATABRICKS_PROFILE:-DEFAULT}"
-VOLUME="${SIGPAC_VOLUME:-/Volumes/geospatial/ribera_duero/raw/sigpac}"
+VOLUME="${SIGPAC_VOLUME:-/Volumes/winery_satellite/bronze/raw/sigpac}"
 PARALLEL="${PARALLEL:-6}"
 
 WORKDIR="$(mktemp -d)"

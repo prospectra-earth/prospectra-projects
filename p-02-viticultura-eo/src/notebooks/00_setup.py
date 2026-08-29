@@ -37,10 +37,12 @@ from pyspark.sql.functions import col, lit
 # COMMAND ----------
 
 # DBTITLE 1,Constants
-CATALOG = "geospatial"
-SCHEMA = "ribera_duero"
-NS = f"{CATALOG}.{SCHEMA}"
-VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/raw"
+CATALOG = "winery_satellite"
+SCHEMA_BRONZE = "bronze"
+SCHEMA_SILVER = "silver"
+NS = f"{CATALOG}.{SCHEMA_BRONZE}"          # default namespace — most tables live here
+NS_SILVER = f"{CATALOG}.{SCHEMA_SILVER}"
+VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA_BRONZE}/raw"
 
 # CRS: store geographic, measure metric. ST_Area on 4258 returns square degrees.
 CRS_STORE = 4258    # ETRS89 geographic — all three vector sources use it
@@ -208,4 +210,4 @@ def extract_band_rows(items, bands, do_id, collection, season, ingested_at=None)
 
 # COMMAND ----------
 
-print(f"setup ready | {NS} | store CRS {CRS_STORE}, measure CRS {CRS_METRIC}")
+print(f"setup ready | {NS} / {NS_SILVER} | store CRS {CRS_STORE}, measure CRS {CRS_METRIC}")

@@ -1,0 +1,29 @@
+bundle:
+  name: p-02-viticultura-eo
+
+include:
+  - resources/*.yml
+
+sync:
+  exclude:
+    - app/frontend/node_modules
+    - app/.venv-backend
+    - plans/**
+    - references/**
+
+variables:
+  catalog:
+    default: winery_satellite
+  schema_bronze:
+    default: bronze
+  schema_silver:
+    default: silver
+  warehouse_id:
+    description: "SQL warehouse the app queries through — defaults to the workspace's Serverless Starter Warehouse"
+    default: a5b9ee8882054597
+
+targets:
+  dev:
+    default: true
+    workspace:
+      profile: dbc-ca633a1a-db56

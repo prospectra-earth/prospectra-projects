@@ -51,16 +51,11 @@
 from pystac_client import Client
 
 dbutils.widgets.text("do_id", "ribera_del_duero")
-dbutils.widgets.text("start_year", "2022")
-dbutils.widgets.text("end_year", "2025")
-dbutils.widgets.text("season_start", "04-01")   # DOY 91
-dbutils.widgets.text("season_end", "10-31")     # DOY 304 — together, the Winkler window
+dbutils.widgets.text("season", "2025")   # one calendar year per run — consistent with 03_download_assets
 dbutils.widgets.text("max_cloud_cover", "80")
 
 DO_ID = dbutils.widgets.get("do_id")
-SEASONS = list(range(int(dbutils.widgets.get("start_year")), int(dbutils.widgets.get("end_year")) + 1))
-SEASON_START = dbutils.widgets.get("season_start")
-SEASON_END = dbutils.widgets.get("season_end")
+SEASON = int(dbutils.widgets.get("season"))
 # Loose on purpose (spec D7). Tile-level cloud describes a whole ~110 km MGRS tile while the DO
 # occupies a slice of it, so a 70%-cloudy tile can be clear over Ribera. The real filter is
 # per-pixel SCL downstream: no scene is rejected, cells are.
@@ -70,28 +65,24 @@ e = spark.table(T_ENVELOPE).where(f"do_id = '{DO_ID}'").first()
 assert e is not None, f"no envelope for {DO_ID} — run 01_reference_geometry first"
 BBOX = [e.west, e.south, e.east, e.north]
 
-print(f"{DO_ID} | {SEASONS[0]}-{SEASONS[-1]} | {SEASON_START}..{SEASON_END} | cloud < {MAX_CLOUD}%")
+print(f"{DO_ID} | season {SEASON} | full calendar year | cloud < {MAX_CLOUD}%")
 print(f"bbox {[round(x, 4) for x in BBOX]}  (from {T_ENVELOPE})")
 
 # COMMAND ----------
 
 # DBTITLE 1,Search
 catalog = Client.open(STAC_API_URL)
-rows = []
 ingested_at = datetime.now(timezone.utc)
 
-for season in SEASONS:
-    items = list(catalog.search(
-        collections=[S2_COLLECTION],
-        bbox=BBOX,
-        datetime=f"{season}-{SEASON_START}T00:00:00Z/{season}-{SEASON_END}T23:59:59Z",
-        query={"eo:cloud_cover": {"lt": MAX_CLOUD}},
-    ).items())
-    r = extract_band_rows(items, S2_BANDS, DO_ID, S2_COLLECTION, season, ingested_at)
-    rows.extend(r)
-    print(f"  {season}: {len(items):4d} items -> {len(r):5d} band rows")
+items = list(catalog.search(
+    collections=[S2_COLLECTION],
+    bbox=BBOX,
+    datetime=f"{SEASON}-01-01T00:00:00Z/{SEASON}-12-31T23:59:59Z",
+    query={"eo:cloud_cover": {"lt": MAX_CLOUD}},
+).items())
+rows = extract_band_rows(items, S2_BANDS, DO_ID, S2_COLLECTION, SEASON, ingested_at)
 
-print(f"\ntotal {len(rows)} rows")
+print(f"season {SEASON}: {len(items)} items -> {len(rows)} band rows")
 
 # COMMAND ----------
 
@@ -104,12 +95,16 @@ for c in ["scale", "offset", "eo_cloud_cover", "s2_degraded_pct"]:
 for c in ["nodata", "spatial_resolution", "proj_epsg"]:
     pdf[c] = pd.to_numeric(pdf[c], errors="coerce").astype("Int64")
 
-(spark.createDataFrame(pdf).write
-     .mode("overwrite").option("overwriteSchema", "true")
-     .clusterBy("season", "tile", "band")
-     .saveAsTable(T_STAC))
+sdf = spark.createDataFrame(pdf)
 
-print(f"wrote {spark.table(T_STAC).count()} rows to {T_STAC}")
+# One season per run now. Replace only this season's slice — full mode("overwrite") would wipe
+# every other season already catalogued, since a run no longer builds the whole table at once.
+if spark.catalog.tableExists(T_STAC):
+    sdf.write.mode("overwrite").option("replaceWhere", f"season = {SEASON}").saveAsTable(T_STAC)
+else:
+    sdf.write.mode("overwrite").clusterBy("season", "tile", "band").saveAsTable(T_STAC)
+
+print(f"wrote {sdf.count()} rows for season {SEASON} to {T_STAC} ({spark.table(T_STAC).count()} total)")
 
 # COMMAND ----------
 
@@ -144,8 +139,9 @@ display(spark.sql(f"""
 # COMMAND ----------
 
 # DBTITLE 1,Q3 — acquisition inventory
-# Expect ~150-250 items per season. Uneven date counts per tile are correct: tiles at the edge
-# are reached by one orbit track rather than two.
+# Full calendar year now (not just the growing season), so expect more items per season than a
+# 04-01..10-31 window would give. Uneven date counts per tile are correct: tiles at the edge are
+# reached by one orbit track rather than two.
 
 display(spark.sql(f"""
     SELECT season, count(DISTINCT item_id) AS items,
