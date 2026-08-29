@@ -5,7 +5,7 @@ public satellite archive and a public cadastral dataset into per-parcel and per-
 time series, ready for a yield-forecast backtest and an interactive map. Built for a named buyer
 (the Consejo Regulador), not as a portfolio piece — see `decisions/D-04_commercial_pivot_viticultura_eo.md`.
 
-All five notebooks are built and run on Databricks Free Edition (serverless). `04_parcel_indices`
+All five notebooks are built and run on Databricks Free Edition (serverless). `03_parcel_indices`
 revives H3 — a decision `plans/PLAN_04_parcel_indices.md` §7 explicitly deferred — because GeoBrix's
 H3 rasterization call turned out to be one extra line once the rest of the pipeline existed, not a
 rebuild. The plan doc is otherwise a reliable design record except where noted below.
@@ -17,21 +17,21 @@ MAPA boundary zip (manual)  ─┐
 SIGPAC zips (manual)        ─┼─► 00_setup (constants + helpers, writes nothing)
 municipios_geo_raw (P-01)   ─┘         │
                                         ▼
-                              01_reference_geometry  (run once per DO)
+                              region_geometries/reference_geometry_ribera  (run once per DO)
                               ├─ ref_do_boundary
                               ├─ ref_municipios
                               ├─ ref_search_envelope ───────┐
                               ├─ ref_vineyard_parcels ───┐   │
                               └─ ref_uso_audit           │   │
                                                           │   ▼
-                                            Earth Search  │  02_ingest_imagery  (recurring, one season/run)
+                                            Earth Search  │  01_ingest_imagery  (recurring, one season/run)
                                             STAC API ─────┼─►  └─ stac_items
                                                           │        │
                                                           │        ▼
-                                                          └─►03_download_assets  (recurring, idempotent)
+                                                          └─►02_download_assets  (recurring, idempotent)
                                                              (windowed COG download,           │
                                                               per-tile bbox from parcels)       ▼
-                                                             └─ s2_assets              04_parcel_indices
+                                                             └─ s2_assets              03_parcel_indices
                                                                                         ├─ ref_parcel_h3_xwalk (static)
                                                                                         ├─ parcel_obs
                                                                                         └─ hex_obs
@@ -41,11 +41,11 @@ municipios_geo_raw (P-01)   ─┘         │
 
 | # | Notebook | Cadence | Reads | Writes |
 |---|---|---|---|---|
-| 00 | `00_setup` | every run (`%run`) | — | nothing — constants, table-name globals, STAC/SIGPAC helpers into the caller's namespace |
-| 01 | `01_reference_geometry` | once per DO (cadastre is near-static) | MAPA boundary zip, SIGPAC `RECFE` zips (both manual downloads), `municipios_geo_raw` (P-01 table) | `ref_do_boundary`, `ref_municipios`, `ref_search_envelope`, `ref_vineyard_parcels`, `ref_uso_audit` |
-| 02 | `02_ingest_imagery` | recurring, one `season` (calendar year) per run | `ref_search_envelope`, Earth Search STAC API | `stac_items` |
-| 03 | `03_download_assets` | recurring, idempotent | `stac_items`, `ref_vineyard_parcels` | `s2_assets` |
-| 04 | `04_parcel_indices` | recurring, one `season` per run | `s2_assets`, `ref_vineyard_parcels`, `stac_items` (footprints only) | `ref_parcel_h3_xwalk` (built once, refreshed on parcel change), `parcel_obs`, `hex_obs` |
+| — | `00_setup` | every run (`%run`) | — | nothing — constants, table-name globals, STAC/SIGPAC helpers into the caller's namespace |
+| — | `region_geometries/reference_geometry_ribera` | once per DO (cadastre is near-static) | MAPA boundary zip, SIGPAC `RECFE` zips (both manual downloads), `municipios_geo_raw` (P-01 table) | `ref_do_boundary`, `ref_municipios`, `ref_search_envelope`, `ref_vineyard_parcels`, `ref_uso_audit` |
+| 01 | `01_ingest_imagery` | recurring, one `season` (calendar year) per run | `ref_search_envelope`, Earth Search STAC API | `stac_items` |
+| 02 | `02_download_assets` | recurring, idempotent | `stac_items`, `ref_vineyard_parcels` | `s2_assets` |
+| 03 | `03_parcel_indices` | recurring, one `season` per run | `s2_assets`, `ref_vineyard_parcels`, `stac_items` (footprints only) | `ref_parcel_h3_xwalk` (built once, refreshed on parcel change), `parcel_obs`, `hex_obs` |
 
 **What each one actually does:**
 

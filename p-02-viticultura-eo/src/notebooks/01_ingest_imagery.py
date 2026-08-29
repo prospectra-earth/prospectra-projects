@@ -4,7 +4,7 @@
 # environment_version = "5"
 # ///
 # MAGIC %md
-# MAGIC # 02 — Ingest Imagery (STAC discovery)
+# MAGIC # 01 — Ingest Imagery (STAC discovery)
 # MAGIC
 # MAGIC Catalogues every Sentinel-2 acquisition over the DO. Metadata only — no pixels are read here.
 # MAGIC Unlike NB01 this is a **recurring** job: re-run to pick up new acquisitions.
@@ -51,7 +51,7 @@
 from pystac_client import Client
 
 dbutils.widgets.text("do_id", "ribera_del_duero")
-dbutils.widgets.text("season", "2025")   # one calendar year per run — consistent with 03_download_assets
+dbutils.widgets.text("season", "2025")   # one calendar year per run — consistent with 02_download_assets
 dbutils.widgets.text("max_cloud_cover", "80")
 
 DO_ID = dbutils.widgets.get("do_id")
@@ -62,7 +62,7 @@ SEASON = int(dbutils.widgets.get("season"))
 MAX_CLOUD = int(dbutils.widgets.get("max_cloud_cover"))
 
 e = spark.table(T_ENVELOPE).where(f"do_id = '{DO_ID}'").first()
-assert e is not None, f"no envelope for {DO_ID} — run 01_reference_geometry first"
+assert e is not None, f"no envelope for {DO_ID} — run region_geometries/reference_geometry_ribera first"
 BBOX = [e.west, e.south, e.east, e.north]
 
 print(f"{DO_ID} | season {SEASON} | full calendar year | cloud < {MAX_CLOUD}%")

@@ -30,7 +30,7 @@ def _run_parcel_obs_query(query: str, params: dict) -> list[dict]:
     except Exception as exc:  # databricks-sql-connector raises its own ServerOperationError
         if "TABLE_OR_VIEW_NOT_FOUND" in str(exc) and "parcel_obs" in str(exc):
             raise TableNotReadyError(
-                "parcel_obs does not exist yet — the pipeline (04_parcel_indices.py) hasn't "
+                "parcel_obs does not exist yet — the pipeline (03_parcel_indices.py) hasn't "
                 "written it. See plans/app_implementation_plan.md §0.1."
             ) from exc
         raise

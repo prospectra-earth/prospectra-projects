@@ -7,7 +7,7 @@
 # environment_version = "5"
 # ///
 # MAGIC %md
-# MAGIC # 03 — Download Assets (windowed COGs → Volume)
+# MAGIC # 02 — Download Assets (windowed COGs → Volume)
 # MAGIC
 # MAGIC Stages Sentinel-2 band COGs into a Volume, **windowed to the vineyard extent of each tile**.
 # MAGIC Recurring job: re-run to pick up new acquisitions. Idempotent — valid files are skipped.
@@ -86,7 +86,7 @@ if not TILES:
         ORDER BY tile
     """).collect()]
     print(f"tiles widget blank -> derived from {T_STAC}: {TILES}")
-assert TILES, f"no tiles found in {T_STAC} for season {SEASON} — run 02_ingest_imagery first"
+assert TILES, f"no tiles found in {T_STAC} for season {SEASON} — run 01_ingest_imagery first"
 
 print(f"season {SEASON} | tiles {TILES} | bands {BANDS} | cloud<{MAX_CLOUD}")
 print(f"out {S2_DIR}")
@@ -338,7 +338,7 @@ print(f"expect all items at n_bands = {len(BANDS)}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC **NB04 `04_parcel_indices`** — read these with `spark.read.format("gtiff_gbx")`, decode with the
+# MAGIC **NB03 `03_parcel_indices`** — read these with `spark.read.format("gtiff_gbx")`, decode with the
 # MAGIC per-asset `scale`/`offset` carried in `s2_assets`, mask on SCL, compute NDVI / NDRE / NDMI via
 # MAGIC `rst_index` (built-in formulae `ndvi`, `ndvi_re`, `ndmi`), and zonal-aggregate to parcels with
 # MAGIC `rst_rasterize_agg` → `parcel_obs`.

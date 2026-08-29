@@ -15,8 +15,8 @@ constants and helpers. Nothing else installs anything.
 | Notebook | Cadence | In | Out |
 |---|---|---|---|
 | `00_setup` | — | — | constants + helpers, writes nothing |
-| `01_reference_geometry` | **manual, once per DO** | MAPA boundary zip, SIGPAC zips, `municipios_geo_raw` | `ref_do_boundary`, `ref_municipios`, `ref_search_envelope`, `ref_vineyard_parcels`, `ref_uso_audit` |
-| `02_ingest_imagery` | **recurring** | `ref_search_envelope`, Earth Search STAC | `stac_items` |
+| `region_geometries/reference_geometry_ribera` | **manual, once per DO** | MAPA boundary zip, SIGPAC zips, `municipios_geo_raw` | `ref_do_boundary`, `ref_municipios`, `ref_search_envelope`, `ref_vineyard_parcels`, `ref_uso_audit` |
+| `01_ingest_imagery` | **recurring** | `ref_search_envelope`, Earth Search STAC | `stac_items` |
 | `03_vineyard_mask` | manual | `ref_vineyard_parcels` | `vineyard_mask` — *not built yet* |
 
 The split is deliberate: **reference geometry is near-static** (new plantings authorised in Ribera
@@ -47,7 +47,7 @@ nothing staging-related is persisted.
 [MAPA](https://www.mapa.gob.es/es/cartografia-y-sig/ide/descargas/alimentacion/vinos) into
 `/Volumes/geospatial/ribera_duero/raw/`. The published URL serves an HTML page, so this is manual.
 
-**2. NB01 Phase 1** — run `01_reference_geometry`. It completes the boundary, municipality and
+**2. NB01 Phase 1** — run `region_geometries/reference_geometry_ribera`. It completes the boundary, municipality and
 envelope tables, writes the SIGPAC download list, and stops cleanly at the Phase 2 gate.
 
 **3. Parcels** — 82 files, ~453 MB, ~7 minutes:
@@ -58,7 +58,7 @@ envelope tables, writes the SIGPAC download list, and stops cleanly at the Phase
 
 Skips what is already uploaded, so it is safe to re-run after an interruption.
 
-**4. NB01 Phase 2** — re-run the notebook. Then `02_ingest_imagery`.
+**4. NB01 Phase 2** — re-run the notebook. Then `01_ingest_imagery`.
 
 ---
 

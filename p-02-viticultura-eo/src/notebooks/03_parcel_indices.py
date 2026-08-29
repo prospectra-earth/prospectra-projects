@@ -7,7 +7,7 @@
 # environment_version = "5"
 # ///
 # MAGIC %md
-# MAGIC # 04 — Parcel Indices (NDVI / NDRE / NDMI, parcel-native + H3 res-12)
+# MAGIC # 03 — Parcel Indices (NDVI / NDRE / NDMI, parcel-native + H3 res-12)
 # MAGIC
 # MAGIC Turns the windowed COGs NB03 staged into vineyard signal at two grains:
 # MAGIC **parcel-native** (`parcel_obs`, one row per recinto per scene) and **H3 res-12**
@@ -99,7 +99,7 @@ if not TILES:
         SELECT DISTINCT tile FROM {T_ASSETS} WHERE season = {SEASON} AND is_out_file_valid
         ORDER BY tile
     """).collect()]
-assert TILES, f"no valid assets in {T_ASSETS} for season {SEASON} — run 03_download_assets first"
+assert TILES, f"no valid assets in {T_ASSETS} for season {SEASON} — run 02_download_assets first"
 print(f"season {SEASON} | tiles {TILES} | H3 res {H3_RES}")
 
 # COMMAND ----------
@@ -526,7 +526,7 @@ print("Informational only — geom_b05 (pure-pixel) vs full-footprint coverage m
 # MAGIC ## Next
 # MAGIC
 # MAGIC **Go/no-go gate** (per `plans/PLAN_04_parcel_indices.md` §5 and the build plan): re-run
-# MAGIC `03_download_assets` for the full 2025 season (`max_items=0`, `tiles` blank), then re-run
+# MAGIC `02_download_assets` for the full 2025 season (`max_items=0`, `tiles` blank), then re-run
 # MAGIC this notebook over that season. Verify Q4–Q7 on `parcel_obs` — Q7's unimodal curve across a
 # MAGIC real season is the test that actually proves the pipeline works — and spot-check `hex_obs`
 # MAGIC row count before committing to the 2022–2024 backfill at hex grain.

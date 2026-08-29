@@ -4,7 +4,7 @@
 # environment_version = "5"
 # ///
 # MAGIC %md
-# MAGIC # 01 — Reference Geometry
+# MAGIC # Reference Geometry — Ribera del Duero
 # MAGIC
 # MAGIC Where the DO is, which municipalities it covers, and where every vineyard parcel sits.
 # MAGIC **Manually triggered, run once per DO** — cadastral geometry is near-static (new plantings
@@ -55,7 +55,7 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./00_setup
+# MAGIC %run ../00_setup
 
 # COMMAND ----------
 
