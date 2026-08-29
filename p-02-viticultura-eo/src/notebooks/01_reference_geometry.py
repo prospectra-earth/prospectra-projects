@@ -588,3 +588,6 @@ if paths:
 # MAGIC    the register is frozen; load a second `sigpac_year` if phenology shows cadastre-driven steps.
 # MAGIC 3. **Boundary** — 82 of 102 municipalities. Take the current member list from the BOCyL *pliego*.
 # MAGIC 4. **Licence** — commercial exploitation prohibited; unresolved.
+
+# COMMAND ----------
+

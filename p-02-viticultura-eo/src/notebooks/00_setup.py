@@ -56,7 +56,7 @@ T_PARCELS = f"{NS}.ref_vineyard_parcels"
 T_USO_AUDIT = f"{NS}.ref_uso_audit"
 T_STAC = f"{NS}.stac_items"
 
-SOURCE_MUNICIPIOS = "geospatial.spain_population_analysis.municipios_geo_raw"
+SOURCE_MUNICIPIOS = "winery_satellite.provided.municipios_geo_raw"
 
 # Sources
 MAPA_SOURCE = "https://www.mapa.gob.es/es/cartografia-y-sig/ide/descargas/alimentacion/vinos"
@@ -85,6 +85,9 @@ CYL_PROVINCES = {
 USO_VINEYARD_PRIMARY = "VI"                       # viñedo
 USO_VINEYARD_ADJACENT = ["VF", "VO", "FV", "CV"]  # viñedo-frutal, -olivar, frutos secos-, cítricos-
 USO_VINEYARD_ALL = [USO_VINEYARD_PRIMARY] + USO_VINEYARD_ADJACENT
+
+spark.sql(f"USE CATALOG {CATALOG}")
+spark.sql(f"USE SCHEMA {SCHEMA_BRONZE}")
 
 # COMMAND ----------
 
